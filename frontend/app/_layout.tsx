@@ -1,0 +1,19 @@
+import React from 'react';
+import { Stack } from 'expo-router';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { AuthProvider } from './contexts/AuthContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider>
+        <AuthProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+          </Stack>
+        </AuthProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
+  );
+}
