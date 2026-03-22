@@ -26,9 +26,18 @@ export default function ProfileScreen() {
     { icon: 'account-edit', title: 'Edit Profile', screen: 'EditProfile' },
     { icon: 'lock-reset', title: 'Change PIN', screen: 'ChangePIN' },
     { icon: 'file-document', title: 'KYC Documents', screen: 'KYC' },
-    { icon: 'chart-line', title: 'Reports', screen: 'Reports' },
+    { icon: 'gift', title: 'Referral Program', screen: 'ReferralInfo' },
     { icon: 'help-circle', title: 'Help & Support', screen: 'Support' },
   ];
+
+  // Role badge color
+  const getRoleBadgeColor = () => {
+    switch (user?.role) {
+      case 'admin': return '#673AB7';
+      case 'distributor': return '#4CAF50';
+      default: return '#2196F3';
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -38,11 +47,47 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.phone}>{user?.phone}</Text>
+        <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor() }]}>
+          <Text style={styles.roleText}>{(user?.role || 'retailer').toUpperCase()}</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Admin Quick Access */}
+        {user?.role === 'admin' && (
+          <TouchableOpacity
+            style={styles.adminCard}
+            onPress={() => navigation.navigate('AdminDashboard')}
+          >
+            <View style={styles.adminIcon}>
+              <MaterialCommunityIcons name="shield-crown" size={32} color="#fff" />
+            </View>
+            <View style={styles.adminInfo}>
+              <Text style={styles.adminTitle}>Admin Panel</Text>
+              <Text style={styles.adminDesc}>Manage users, transactions & reports</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {/* Distributor Quick Access */}
+        {user?.role === 'distributor' && (
+          <TouchableOpacity
+            style={styles.distributorCard}
+            onPress={() => navigation.navigate('DistributorDashboard')}
+          >
+            <View style={styles.distributorIcon}>
+              <MaterialCommunityIcons name="store" size={32} color="#fff" />
+            </View>
+            <View style={styles.distributorInfo}>
+              <Text style={styles.distributorTitle}>Distributor Dashboard</Text>
+              <Text style={styles.distributorDesc}>Manage retailers & view reports</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
         {/* KYC Status Card */}
-        <View style={styles.kycCard}>
+        <View style={[styles.kycCard, (user?.role === 'admin' || user?.role === 'distributor') && { marginTop: 16 }]}>
           <View style={styles.kycHeader}>
             <MaterialCommunityIcons name="shield-check" size={24} color="#4CAF50" />
             <Text style={styles.kycTitle}>KYC Status</Text>
@@ -214,6 +259,91 @@ const styles = StyleSheet.create({
   footerSubtext: {
     fontSize: 12,
     color: '#ccc',
+    marginTop: 4,
+  },
+  roleBadge: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  adminCard: {
+    backgroundColor: '#673AB7',
+    margin: 16,
+    marginTop: -20,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  adminIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adminInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  adminTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  adminDesc: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.8,
+    marginTop: 4,
+  },
+  distributorCard: {
+    backgroundColor: '#4CAF50',
+    margin: 16,
+    marginTop: -20,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  distributorIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  distributorInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  distributorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  distributorDesc: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.8,
     marginTop: 4,
   },
 });

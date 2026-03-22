@@ -14,13 +14,14 @@ import { useNavigation } from '@react-navigation/native';
 
 const services = [
   { id: 'mobile', name: 'Mobile\nRecharge', icon: 'cellphone', color: '#FF9800', screen: 'MobileRecharge' },
-  { id: 'dth', name: 'DTH\nRecharge', icon: 'television', color: '#9C27B0', screen: 'DTHRecharge' },
-  { id: 'electricity', name: 'Electricity\nBill', icon: 'flash', color: '#F44336', screen: 'ElectricityBill' },
-  { id: 'water', name: 'Water\nBill', icon: 'water', color: '#2196F3', screen: 'WaterBill' },
-  { id: 'gas', name: 'Gas\nBill', icon: 'fire', color: '#FF5722', screen: 'GasBill' },
-  { id: 'aeps', name: 'AEPS', icon: 'fingerprint', color: '#4CAF50', screen: 'AEPS' },
-  { id: 'dmt', name: 'Money\nTransfer', icon: 'bank-transfer', color: '#00BCD4', screen: 'DMT' },
-  { id: 'statement', name: 'Mini\nStatement', icon: 'file-document', color: '#795548', screen: 'Statement' },
+  { id: 'dth', name: 'DTH\nRecharge', icon: 'television', color: '#9C27B0', screen: 'MobileRecharge' },
+];
+
+const distributorServices = [
+  { id: 'dashboard', name: 'Dashboard', icon: 'view-dashboard', color: '#1976D2', screen: 'DistributorDashboard' },
+  { id: 'retailers', name: 'My\nRetailers', icon: 'account-group', color: '#4CAF50', screen: 'RetailerList' },
+  { id: 'addRetailer', name: 'Add\nRetailer', icon: 'account-plus', color: '#FF9800', screen: 'AddRetailer' },
+  { id: 'reports', name: 'Sales\nReports', icon: 'chart-bar', color: '#9C27B0', screen: 'SalesReport' },
 ];
 
 export default function HomeScreen() {
@@ -97,6 +98,27 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* Distributor Section - Show only for distributors */}
+        {user?.role === 'distributor' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Super Distribution</Text>
+            <View style={styles.servicesGrid}>
+              {distributorServices.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.serviceCard}
+                  onPress={() => navigation.navigate(service.screen)}
+                >
+                  <View style={[styles.serviceIcon, { backgroundColor: service.color }]}>
+                    <MaterialCommunityIcons name={service.icon as any} size={28} color="#fff" />
+                  </View>
+                  <Text style={styles.serviceName}>{service.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Recent Transactions */}
         <View style={styles.section}>
