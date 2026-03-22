@@ -526,6 +526,389 @@ class DigirHubTester:
         except Exception as e:
             self.log_result("KYC Status", False, f"Request failed: {str(e)}")
             return False
+
+    # ============= SUPER DISTRIBUTION TESTS =============
+    
+    def test_create_distributor(self):
+        """Test creating a distributor user"""
+        try:
+            # Send OTP for distributor
+            data = {"phone": "7777777777"}  # Different phone number
+            response = requests.post(f"{BASE_URL}/auth/send-otp", json=data, headers=HEADERS, timeout=10)
+            
+            if response.status_code != 200:
+                self.log_result("Create Distributor - Send OTP", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+            
+            # Verify OTP with distributor role
+            data = {
+                "phone": "7777777777",  # Different phone number
+                "otp": "123456",
+                "name": "Test Distributor",
+                "role": "distributor"
+            }
+            response = requests.post(f"{BASE_URL}/auth/verify-otp", json=data, headers=HEADERS, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success") and result.get("token"):
+                    self.distributor_token = result["token"]
+                    self.distributor_data = result["user"]
+                    self.log_result("Create Distributor", True, "Distributor created and authenticated", {
+                        "user_id": self.distributor_data.get("id"),
+                        "role": self.distributor_data.get("role"),
+                        "is_new_user": result.get("is_new_user")
+                    })
+                    return True
+                else:
+                    self.log_result("Create Distributor", False, "Distributor authentication failed", result)
+                    return False
+            else:
+                self.log_result("Create Distributor", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Create Distributor", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_create_retailer(self):
+        """Test creating a retailer under distributor"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Create Retailer", False, "No distributor token available")
+            return False
+            
+        try:
+            data = {
+                "phone": "6666666666",  # Different phone number
+                "name": "Test Retailer",
+                "email": "retailer@test.com"
+            }
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.post(f"{BASE_URL}/retailer/create", json=data, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    self.retailer_data = result["retailer"]
+                    self.log_result("Create Retailer", True, "Retailer created successfully", {
+                        "retailer_id": self.retailer_data.get("id"),
+                        "name": self.retailer_data.get("name"),
+                        "phone": self.retailer_data.get("phone"),
+                        "parent_id": self.retailer_data.get("parent_id")
+                    })
+                    return True
+                else:
+                    self.log_result("Create Retailer", False, "Retailer creation failed", result)
+                    return False
+            else:
+                self.log_result("Create Retailer", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Create Retailer", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_list_retailers(self):
+        """Test listing retailers under distributor"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("List Retailers", False, "No distributor token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.get(f"{BASE_URL}/retailer/list?limit=10", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "retailers" in result:
+                    retailers = result["retailers"]
+                    self.log_result("List Retailers", True, "Retailers list retrieved", {
+                        "count": len(retailers),
+                        "total": result.get("total", 0)
+                    })
+                    return True
+                else:
+                    self.log_result("List Retailers", False, "Invalid retailers response", result)
+                    return False
+            else:
+                self.log_result("List Retailers", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("List Retailers", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_get_retailer_details(self):
+        """Test getting specific retailer details"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Get Retailer Details", False, "No distributor token available")
+            return False
+        
+        if not hasattr(self, 'retailer_data') or not self.retailer_data:
+            self.log_result("Get Retailer Details", False, "No retailer data available")
+            return False
+            
+        try:
+            retailer_id = self.retailer_data.get("id")
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.get(f"{BASE_URL}/retailer/{retailer_id}", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "retailer" in result:
+                    retailer = result["retailer"]
+                    self.log_result("Get Retailer Details", True, "Retailer details retrieved", {
+                        "retailer_id": retailer.get("id"),
+                        "name": retailer.get("name"),
+                        "wallet_balance": retailer.get("wallet_balance"),
+                        "stats_available": "stats_by_type" in result
+                    })
+                    return True
+                else:
+                    self.log_result("Get Retailer Details", False, "Invalid retailer details response", result)
+                    return False
+            else:
+                self.log_result("Get Retailer Details", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Get Retailer Details", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_update_retailer(self):
+        """Test updating retailer details"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Update Retailer", False, "No distributor token available")
+            return False
+        
+        if not hasattr(self, 'retailer_data') or not self.retailer_data:
+            self.log_result("Update Retailer", False, "No retailer data available")
+            return False
+            
+        try:
+            retailer_id = self.retailer_data.get("id")
+            data = {
+                "name": "Updated Test Retailer",
+                "email": "updated.retailer@test.com",
+                "commission_rates": {
+                    "recharge": 2.5,
+                    "bill": 2.0,
+                    "aeps": 1.0,
+                    "dmt": 1.0
+                }
+            }
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.put(f"{BASE_URL}/retailer/{retailer_id}", json=data, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    self.log_result("Update Retailer", True, "Retailer updated successfully", result)
+                    return True
+                else:
+                    self.log_result("Update Retailer", False, "Retailer update failed", result)
+                    return False
+            else:
+                self.log_result("Update Retailer", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Update Retailer", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_update_retailer_wallet(self):
+        """Test adding/deducting balance from retailer wallet"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Update Retailer Wallet", False, "No distributor token available")
+            return False
+        
+        if not hasattr(self, 'retailer_data') or not self.retailer_data:
+            self.log_result("Update Retailer Wallet", False, "No retailer data available")
+            return False
+            
+        try:
+            retailer_id = self.retailer_data.get("id")
+            
+            # Test adding money
+            data = {
+                "retailer_id": retailer_id,
+                "amount": 500,
+                "action": "add"
+            }
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.post(f"{BASE_URL}/retailer/{retailer_id}/wallet", json=data, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    self.log_result("Update Retailer Wallet", True, "Retailer wallet updated successfully", {
+                        "action": "add",
+                        "amount": 500,
+                        "new_balance": result.get("new_balance")
+                    })
+                    return True
+                else:
+                    self.log_result("Update Retailer Wallet", False, "Retailer wallet update failed", result)
+                    return False
+            else:
+                self.log_result("Update Retailer Wallet", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Update Retailer Wallet", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_distributor_stats(self):
+        """Test getting distributor dashboard stats"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Distributor Stats", False, "No distributor token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.get(f"{BASE_URL}/distributor/stats", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "total_retailers" in result:
+                    self.log_result("Distributor Stats", True, "Distributor stats retrieved", {
+                        "total_retailers": result.get("total_retailers"),
+                        "active_retailers": result.get("active_retailers"),
+                        "total_transactions": result.get("total_transactions"),
+                        "total_revenue": result.get("total_revenue"),
+                        "today_stats": result.get("today", {})
+                    })
+                    return True
+                else:
+                    self.log_result("Distributor Stats", False, "Invalid distributor stats response", result)
+                    return False
+            else:
+                self.log_result("Distributor Stats", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Distributor Stats", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_sales_report(self):
+        """Test getting sales report"""
+        if not hasattr(self, 'distributor_token') or not self.distributor_token:
+            self.log_result("Sales Report", False, "No distributor token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.distributor_token}"}
+            response = requests.get(f"{BASE_URL}/reports/sales", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "summary" in result:
+                    summary = result["summary"]
+                    self.log_result("Sales Report", True, "Sales report retrieved", {
+                        "total_transactions": summary.get("total_transactions"),
+                        "total_amount": summary.get("total_amount"),
+                        "total_commission": summary.get("total_commission"),
+                        "by_service_count": len(result.get("by_service", [])),
+                        "by_date_count": len(result.get("by_date", []))
+                    })
+                    return True
+                else:
+                    self.log_result("Sales Report", False, "Invalid sales report response", result)
+                    return False
+            else:
+                self.log_result("Sales Report", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Sales Report", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_referral_info(self):
+        """Test getting referral information"""
+        if not self.token:
+            self.log_result("Referral Info", False, "No auth token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.token}"}
+            response = requests.get(f"{BASE_URL}/referral/info", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "referral_code" in result:
+                    self.log_result("Referral Info", True, "Referral info retrieved", {
+                        "referral_code": result.get("referral_code"),
+                        "total_referrals": result.get("total_referrals"),
+                        "total_earnings": result.get("total_earnings"),
+                        "pending_earnings": result.get("pending_earnings")
+                    })
+                    return True
+                else:
+                    self.log_result("Referral Info", False, "Invalid referral info response", result)
+                    return False
+            else:
+                self.log_result("Referral Info", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Referral Info", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_referral_claim(self):
+        """Test claiming referral rewards"""
+        if not self.token:
+            self.log_result("Referral Claim", False, "No auth token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.token}"}
+            response = requests.post(f"{BASE_URL}/referral/claim", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    self.log_result("Referral Claim", True, "Referral claim processed", {
+                        "amount": result.get("amount"),
+                        "new_balance": result.get("new_balance"),
+                        "message": result.get("message")
+                    })
+                    return True
+                else:
+                    self.log_result("Referral Claim", False, "Referral claim failed", result)
+                    return False
+            else:
+                self.log_result("Referral Claim", False, f"HTTP {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Referral Claim", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_retailer_access_denied(self):
+        """Test that regular retailers cannot access distributor endpoints"""
+        if not self.token:
+            self.log_result("Retailer Access Denied", False, "No retailer token available")
+            return False
+            
+        try:
+            headers = {**HEADERS, "Authorization": f"Bearer {self.token}"}
+            
+            # Test retailer trying to access distributor stats
+            response = requests.get(f"{BASE_URL}/distributor/stats", headers=headers, timeout=10)
+            
+            if response.status_code == 403:
+                self.log_result("Retailer Access Denied", True, "Retailer correctly denied access to distributor endpoints", {
+                    "status_code": response.status_code,
+                    "endpoint": "/distributor/stats"
+                })
+                return True
+            else:
+                self.log_result("Retailer Access Denied", False, f"Expected 403, got {response.status_code}", {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_result("Retailer Access Denied", False, f"Request failed: {str(e)}")
+            return False
     
     def run_all_tests(self):
         """Run complete test suite"""
@@ -589,6 +972,45 @@ class DigirHubTester:
         time.sleep(1)
         
         self.test_kyc_status()
+        time.sleep(1)
+        
+        # Referral Tests (for regular user)
+        print("\n🎁 REFERRAL TESTS")
+        self.test_referral_info()
+        time.sleep(1)
+        
+        self.test_referral_claim()
+        time.sleep(1)
+        
+        # Test access control (retailer trying to access distributor endpoints)
+        print("\n🔒 ACCESS CONTROL TESTS")
+        self.test_retailer_access_denied()
+        time.sleep(1)
+        
+        # Super Distribution Tests
+        print("\n🏢 SUPER DISTRIBUTION TESTS")
+        self.test_create_distributor()
+        time.sleep(1)
+        
+        self.test_create_retailer()
+        time.sleep(1)
+        
+        self.test_list_retailers()
+        time.sleep(1)
+        
+        self.test_get_retailer_details()
+        time.sleep(1)
+        
+        self.test_update_retailer()
+        time.sleep(1)
+        
+        self.test_update_retailer_wallet()
+        time.sleep(1)
+        
+        self.test_distributor_stats()
+        time.sleep(1)
+        
+        self.test_sales_report()
         
         # Summary
         print("\n" + "=" * 60)

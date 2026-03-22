@@ -204,7 +204,12 @@ async def verify_otp(request: VerifyOTPRequest):
         }
     else:
         # Create new user
-        user = User(phone=request.phone, name=request.name)
+        user = User(
+            phone=request.phone, 
+            name=request.name,
+            role=request.role,
+            referred_by=request.referral_code
+        )
         await db.users.insert_one(user.dict())
         token = create_token(user.id)
         return {
@@ -972,8 +977,11 @@ async def get_sales_report(
 @api_router.get("/referral/info")
 async def get_referral_info(current_user: dict = Depends(get_current_user)):
     """Get user's referral code and referral stats"""
+    # Get referral code (handle case where it might not exist for old users)
+    referral_code = current_user.get('referral_code', '')
+    
     # Count referred users
-    referred_count = await db.users.count_documents({"referred_by": current_user['referral_code']})
+    referred_count = await db.users.count_documents({"referred_by": referral_code}) if referral_code else 0
     
     # Get referral earnings
     referrals = await db.referrals.find({"referrer_id": current_user['id']}).to_list(100)
@@ -982,12 +990,12 @@ async def get_referral_info(current_user: dict = Depends(get_current_user)):
     
     # Get referred users list
     referred_users = await db.users.find(
-        {"referred_by": current_user['referral_code']},
+        {"referred_by": referral_code},
         {"name": 1, "phone": 1, "created_at": 1}
-    ).to_list(50)
+    ).to_list(50) if referral_code else []
     
     return {
-        "referral_code": current_user['referral_code'],
+        "referral_code": referral_code,
         "total_referrals": referred_count,
         "total_earnings": round(total_earnings, 2),
         "pending_earnings": round(pending_earnings, 2),
