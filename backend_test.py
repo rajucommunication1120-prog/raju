@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://digital-services-pay-1.preview.emergentagent.com/api"
+BASE_URL = "https://retailer-network-1.preview.emergentagent.com/api"
 HEADERS = {"Content-Type": "application/json"}
 
 class DigirHubTester:
