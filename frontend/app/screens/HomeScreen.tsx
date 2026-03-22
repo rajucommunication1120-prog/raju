@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,36 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Animated,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 
+const { width } = Dimensions.get('window');
+
 const services = [
-  { id: 'mobile', name: 'Mobile\nRecharge', icon: 'cellphone', color: '#FF9800', screen: 'MobileRecharge' },
-  { id: 'dth', name: 'DTH\nRecharge', icon: 'television', color: '#9C27B0', screen: 'MobileRecharge' },
+  { id: 'prepaid', name: 'Prepaid', icon: 'cellphone', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'postpaid', name: 'Postpaid', icon: 'cellphone-check', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'dth', name: 'DTH', icon: 'satellite-variant', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'landline', name: 'Landline', icon: 'phone-classic', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'electricity', name: 'Electricity', icon: 'lightning-bolt', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'gas', name: 'Piped Gas', icon: 'fire', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'broadband', name: 'Broadband', icon: 'wifi', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'water', name: 'Water', icon: 'water', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'loan', name: 'Loan\nRepayment', icon: 'cash-refund', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'lpg', name: 'LPG Gas\nCylinder', icon: 'gas-cylinder', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'insurance', name: 'Insurance\nPremium', icon: 'shield-check', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'fastag', name: 'FASTag', icon: 'car', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'cabletv', name: 'Cable TV', icon: 'television', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'tax', name: 'Municipal\nTaxes', icon: 'bank', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'education', name: 'Education\nFees', icon: 'school', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'housing', name: 'Housing\nSociety', icon: 'home-city', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'creditcard', name: 'Credit Card', icon: 'credit-card', color: '#FF6B35', screen: 'MobileRecharge' },
+  { id: 'whatsapp', name: 'WhatsApp\nCare', icon: 'whatsapp', color: '#25D366', screen: 'MobileRecharge' },
 ];
 
 const distributorServices = [
@@ -28,17 +49,27 @@ export default function HomeScreen() {
   const { user, refreshUser } = useAuth();
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
-  const [recentTransactions, setRecentTransactions] = useState([]);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const newsScrollX = useRef(new Animated.Value(width)).current;
 
   useEffect(() => {
     loadData();
+    startNewsAnimation();
   }, []);
+
+  const startNewsAnimation = () => {
+    Animated.loop(
+      Animated.timing(newsScrollX, {
+        toValue: -width,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
 
   const loadData = async () => {
     try {
       await refreshUser();
-      const response = await api.get('/transactions?limit=5');
-      setRecentTransactions(response.data.transactions);
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -50,12 +81,41 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  const getRoleLabel = () => {
+    switch (user?.role) {
+      case 'admin': return 'Admin';
+      case 'distributor': return 'Distributor';
+      default: return 'Retailer';
+    }
+  };
+
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}! 👋</Text>
-          <Text style={styles.subtitle}>Welcome to DIGIR HUB</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>DR</Text>
+            <Text style={styles.logoSubtext}>DIGIR HUB</Text>
+          </View>
+          <View style={styles.balanceContainer}>
+            <View style={styles.balanceItem}>
+              <MaterialCommunityIcons name="wallet" size={16} color="#4CAF50" />
+              <Text style={styles.balanceLabel}>Prepaid</Text>
+              <Text style={styles.balanceValue}>₹ {user?.wallet_balance?.toFixed(1) || '0.0'}</Text>
+            </View>
+            <View style={styles.balanceItem}>
+              <MaterialCommunityIcons name="wallet-outline" size={16} color="#FF9800" />
+              <Text style={styles.balanceLabel}>Utility</Text>
+              <Text style={styles.balanceValue}>₹ 0.0</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+            <MaterialCommunityIcons name="refresh" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{user?.name} ( {getRoleLabel()} )</Text>
         </View>
       </View>
 
@@ -63,39 +123,50 @@ export default function HomeScreen() {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Wallet Card */}
-        <View style={styles.walletCard}>
-          <View style={styles.walletHeader}>
-            <View>
-              <Text style={styles.walletLabel}>Wallet Balance</Text>
-              <Text style={styles.walletBalance}>₹{user?.wallet_balance.toFixed(2)}</Text>
+        {/* Banner */}
+        <View style={styles.bannerContainer}>
+          <View style={styles.banner}>
+            <Text style={styles.bannerTitle}>SUCCESS!</Text>
+            <Text style={styles.bannerText}>ADD MONEY WORKING FINE NOW</Text>
+            <Text style={styles.bannerSubtext}>Purchase Your Balance Via:</Text>
+            <View style={styles.paymentIcons}>
+              <View style={[styles.paymentIcon, { backgroundColor: '#5f259f' }]}>
+                <Text style={styles.paymentText}>PhonePe</Text>
+              </View>
+              <View style={[styles.paymentIcon, { backgroundColor: '#4285F4' }]}>
+                <Text style={styles.paymentText}>GPay</Text>
+              </View>
+              <View style={[styles.paymentIcon, { backgroundColor: '#00BAF2' }]}>
+                <Text style={styles.paymentText}>Paytm</Text>
+              </View>
+              <View style={[styles.paymentIcon, { backgroundColor: '#FF6B00' }]}>
+                <Text style={styles.paymentText}>UPI</Text>
+              </View>
             </View>
-            <TouchableOpacity
-              style={styles.addMoneyButton}
-              onPress={() => navigation.navigate('AddMoney')}
-            >
-              <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-              <Text style={styles.addMoneyText}>Add Money</Text>
+            <View style={styles.commissionBadge}>
+              <Text style={styles.commissionText}>Get EXTRA 1% COMMISSION</Text>
+              <Text style={styles.commissionSubtext}>ON ABOVE Rs.5000 LOAD</Text>
+            </View>
+            <TouchableOpacity style={styles.topUpButton}>
+              <Text style={styles.topUpText}>TOP UP NOW</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Services Grid */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Services</Text>
-          <View style={styles.servicesGrid}>
-            {services.map((service) => (
-              <TouchableOpacity
-                key={service.id}
-                style={styles.serviceCard}
-                onPress={() => navigation.navigate(service.screen)}
-              >
-                <View style={[styles.serviceIcon, { backgroundColor: service.color }]}>
-                  <MaterialCommunityIcons name={service.icon as any} size={28} color="#fff" />
-                </View>
-                <Text style={styles.serviceName}>{service.name}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* News Ticker */}
+        <View style={styles.newsTicker}>
+          <View style={styles.newsLabel}>
+            <Text style={styles.newsLabelText}>News</Text>
+          </View>
+          <View style={styles.newsContent}>
+            <Animated.Text
+              style={[
+                styles.newsText,
+                { transform: [{ translateX: newsScrollX }] },
+              ]}
+            >
+              Welcome To Digir Hub - Your One Stop Digital Services Platform
+            </Animated.Text>
           </View>
         </View>
 
@@ -110,8 +181,10 @@ export default function HomeScreen() {
                   style={styles.serviceCard}
                   onPress={() => navigation.navigate(service.screen)}
                 >
-                  <View style={[styles.serviceIcon, { backgroundColor: service.color }]}>
-                    <MaterialCommunityIcons name={service.icon as any} size={28} color="#fff" />
+                  <View style={[styles.serviceIconWrapper]}>
+                    <View style={[styles.serviceIcon, { borderColor: service.color }]}>
+                      <MaterialCommunityIcons name={service.icon as any} size={28} color={service.color} />
+                    </View>
                   </View>
                   <Text style={styles.serviceName}>{service.name}</Text>
                 </TouchableOpacity>
@@ -120,146 +193,208 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Recent Transactions */}
+        {/* Services Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('History')}>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Recharge & Pay Bills</Text>
+          <View style={styles.servicesGrid}>
+            {services.map((service) => (
+              <TouchableOpacity
+                key={service.id}
+                style={styles.serviceCard}
+                onPress={() => navigation.navigate(service.screen)}
+              >
+                <View style={styles.serviceIconWrapper}>
+                  <View style={[styles.serviceIcon, { borderColor: '#FF6B35' }]}>
+                    <MaterialCommunityIcons 
+                      name={service.icon as any} 
+                      size={28} 
+                      color={service.id === 'whatsapp' ? '#25D366' : '#1a237e'} 
+                    />
+                  </View>
+                </View>
+                <Text style={styles.serviceName}>{service.name}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          {recentTransactions.length > 0 ? (
-            recentTransactions.map((transaction: any) => (
-              <View key={transaction.id} style={styles.transactionCard}>
-                <View style={styles.transactionIcon}>
-                  <MaterialCommunityIcons
-                    name={getTransactionIcon(transaction.type)}
-                    size={24}
-                    color={transaction.status === 'success' ? '#4CAF50' : '#F44336'}
-                  />
-                </View>
-                <View style={styles.transactionInfo}>
-                  <Text style={styles.transactionTitle}>
-                    {transaction.service.replace('_', ' ').toUpperCase()}
-                  </Text>
-                  <Text style={styles.transactionDate}>
-                    {new Date(transaction.created_at).toLocaleDateString()}
-                  </Text>
-                </View>
-                <View style={styles.transactionAmount}>
-                  <Text
-                    style={[
-                      styles.amountText,
-                      { color: transaction.status === 'success' ? '#4CAF50' : '#F44336' },
-                    ]}
-                  >
-                    ₹{transaction.amount.toFixed(2)}
-                  </Text>
-                  <Text style={styles.statusText}>{transaction.status}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="inbox" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>No transactions yet</Text>
-            </View>
-          )}
         </View>
       </ScrollView>
     </View>
   );
 }
 
-function getTransactionIcon(type: string) {
-  const icons: any = {
-    recharge: 'cellphone',
-    bill: 'file-document',
-    aeps: 'fingerprint',
-    dmt: 'bank-transfer',
-    wallet: 'wallet',
-  };
-  return icons[type] || 'cash';
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f0f0f0',
   },
   header: {
-    backgroundColor: '#2196F3',
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
+    backgroundColor: '#1a237e',
+    paddingTop: 50,
+    paddingBottom: 12,
+  },
+  headerTop: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
     justifyContent: 'space-between',
+  },
+  logoContainer: {
     alignItems: 'center',
   },
-  greeting: {
+  logoText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+    fontStyle: 'italic',
   },
-  subtitle: {
-    fontSize: 14,
+  logoSubtext: {
+    fontSize: 8,
     color: '#fff',
-    opacity: 0.9,
-    marginTop: 4,
+    opacity: 0.8,
+  },
+  balanceContainer: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'center',
+    gap: 20,
+  },
+  balanceItem: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  balanceLabel: {
+    fontSize: 10,
+    color: '#fff',
+    opacity: 0.8,
+  },
+  balanceValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userInfo: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   content: {
     flex: 1,
   },
-  walletCard: {
-    backgroundColor: '#4CAF50',
-    margin: 16,
-    marginTop: -40,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  bannerContainer: {
+    padding: 12,
   },
-  walletHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  banner: {
+    backgroundColor: '#0d47a1',
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
   },
-  walletLabel: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  walletBalance: {
-    fontSize: 32,
+  bannerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 4,
+    color: '#FFD700',
+    marginBottom: 4,
   },
-  addMoneyButton: {
+  bannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  bannerSubtext: {
+    fontSize: 12,
+    color: '#fff',
+    marginBottom: 8,
+  },
+  paymentIcons: {
     flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  paymentIcon: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  paymentText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  commissionBadge: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  commissionText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFD700',
+  },
+  commissionSubtext: {
+    fontSize: 12,
+    color: '#FF5722',
+    fontWeight: '600',
+  },
+  topUpButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  addMoneyText: {
+  topUpText: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#fff',
-    fontWeight: '600',
-    marginLeft: 4,
+  },
+  newsTicker: {
+    flexDirection: 'row',
+    backgroundColor: '#1a237e',
+    marginHorizontal: 12,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  newsLabel: {
+    backgroundColor: '#0d47a1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  newsLabelText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  newsContent: {
+    flex: 1,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  newsText: {
+    fontSize: 12,
+    color: '#FFD700',
+    fontWeight: '500',
   },
   section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -267,90 +402,35 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 16,
   },
-  seeAll: {
-    fontSize: 14,
-    color: '#2196F3',
-    fontWeight: '600',
-  },
   servicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   serviceCard: {
-    width: '23%',
+    width: '25%',
     alignItems: 'center',
     marginBottom: 16,
   },
+  serviceIconWrapper: {
+    marginBottom: 8,
+  },
   serviceIcon: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     borderRadius: 12,
+    borderWidth: 2,
+    borderTopWidth: 2,
+    borderRightWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: '#fff',
   },
   serviceName: {
     fontSize: 11,
     textAlign: 'center',
     color: '#333',
     fontWeight: '500',
-  },
-  transactionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  transactionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  transactionInfo: {
-    flex: 1,
-  },
-  transactionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-  transactionAmount: {
-    alignItems: 'flex-end',
-  },
-  amountText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  statusText: {
-    fontSize: 11,
-    color: '#999',
-    marginTop: 4,
-    textTransform: 'capitalize',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
+    lineHeight: 14,
   },
 });
