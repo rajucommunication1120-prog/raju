@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel Login</title>
+</head>
+<body style="text-align:center; font-family:Arial;">
+
+  <h2>Admin Panel Login</h2>
+
+  <input type="text" placeholder="Username" id="user"><br><br>
+  <input type="password" placeholder="Password" id="pass"><br><br>
+
+  <button onclick="login()">Login</button>
+
+  <script>
+    function login(){
+      var u = document.getElementById("user").value;
+      var p = document.getElementById("pass").value;
+
+      if(u=="admin" && p=="1234"){
+        alert("Login Success");
+      } else {
+        alert("Wrong Details");
+      }
+    }
+  </script>
+
+</body>
+</html>
