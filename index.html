@@ -16,8 +16,7 @@
   <button onclick="alert('Distributor Created')">Create Distributor</button>
 <button onclick="alert('Retailer Created')">Create Retailer</button>
 <button onclick="alert('Service ON/OFF')">Services</button>
-<input type="text" placeholder="Distributor Name" id="distName">
-<button onclick="createDist()">Create Distributor</button>
+
 
 <script>
 function createDist(){
@@ -45,3 +44,12 @@ function createDist(){
 
 </body>
 </html>
+<input type="text" placeholder="Distributor Name" id="distName">
+<button onclick="createDist()">Create Distributor</button>
+
+<script>
+function createDist(){
+  let name = document.getElementById("distName").value;
+  alert("Distributor " + name + " Created ✅");
+}
+</script>
