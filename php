@@ -5,7 +5,11 @@ $name = $_POST['name'];
 $mobile = $_POST['mobile'];
 $password = $_POST['password'];
 
-mysqli_query($conn, "INSERT INTO distributors(name,mobile,password,balance) VALUES('$name','$mobile','$password','0')");
+$query = "INSERT INTO distributors(name,mobile,password,balance) 
+VALUES('$name','$mobile','$password','0')";
 
-echo "Distributor Created";
-?>
+if(mysqli_query($conn,$query)){
+    echo "Distributor Created Successfully";
+}else{
+    echo mysqli_error($conn);
+}
