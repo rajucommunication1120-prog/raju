@@ -6,3 +6,5 @@ Distributor = Current User
 Balance = 0
 Distributor Blaance - Amount
 Retailer Balance + Amount
+role =distributor
+open Distributor Dashaboard
