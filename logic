@@ -4,3 +4,5 @@ Password = textbox3
 Role = Retailer
 Distributor = Current User
 Balance = 0
+Distributor Blaance - Amount
+Retailer Balance + Amount
