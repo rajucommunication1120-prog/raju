@@ -1,0 +1,6 @@
+Name = textbox1
+Mobile = textbox2
+Password = textbox3
+Role = Retailer
+Distributor = Current User
+Balance = 0
