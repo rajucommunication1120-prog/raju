@@ -8,3 +8,10 @@ Distributor Blaance - Amount
 Retailer Balance + Amount
 role =distributor
 open Distributor Dashaboard
+if mobile match
+And password match
+And role = distributor page
+if role = admin
+open Admin Dashbord
+if role = retailer 
+open Retailer Dashboard
