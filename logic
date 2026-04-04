@@ -1,17 +1,1 @@
-Name = textbox1
-Mobile = textbox2
-Password = textbox3
-Role = Retailer
-Distributor = Current User
-Balance = 0
-Distributor Blaance - Amount
-Retailer Balance + Amount
-role =distributor
-open Distributor Dashaboard
-if mobile match
-And password match
-And role = distributor page
-if role = admin
-open Admin Dashbord
-if role = retailer 
-open Retailer Dashboard
+
